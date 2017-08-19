@@ -14,8 +14,11 @@ class MemeEditorViewController: UIViewController,UIImagePickerControllerDelegate
     @IBOutlet weak var topTextField: UITextField!
     @IBOutlet weak var bottomTextField: UITextField!
     @IBOutlet weak var cameraButton: UIBarButtonItem!
+    @IBOutlet weak var navbar: UIToolbar!
+    @IBOutlet weak var toolbar: UIToolbar!
+    @IBOutlet weak var shareButton: UIBarButtonItem!
     
-    var paragraphStyle : NSMutableParagraphStyle!
+    var activityViewController : UIActivityViewController!
     let textFieldDelegate = TextFieldsDelegate()
     
     // Hide status so that it wont cover our toolbar at top
@@ -29,11 +32,14 @@ class MemeEditorViewController: UIViewController,UIImagePickerControllerDelegate
         topTextField.delegate = textFieldDelegate
         bottomTextField.delegate = textFieldDelegate
         subscribeForNotifications()
+        
+        //Setting share button to disabled mode
+        shareButton.isEnabled = false
     }
     
     override func viewWillAppear(_ animated: Bool) {
         
-        paragraphStyle = NSMutableParagraphStyle()
+        let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.alignment = .center
         
         //Custom Text Attributes
@@ -52,6 +58,7 @@ class MemeEditorViewController: UIViewController,UIImagePickerControllerDelegate
         
         //Checking if camera option is available for the device or not
         cameraButton.isEnabled = UIImagePickerController.isSourceTypeAvailable(.camera)
+        
     }
     
     //Camera Button is Tapped
@@ -78,21 +85,79 @@ class MemeEditorViewController: UIViewController,UIImagePickerControllerDelegate
     // Set image to our imageview after finishing pinking image
     func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [String : Any]) {
         
+        shareButton.isEnabled = true
         if let image = info[UIImagePickerControllerOriginalImage] as? UIImage {
             
             originalImage.image = image
         }
-        
         dismiss(animated: true, completion: nil)
     }
     
     //After keyboard pops up
-    func keyboardPopped(){
-        print("popped")
+    func keyboardPoppedUp(notification : Notification){
+        if bottomTextField.isFirstResponder {
+            self.view.center.y -= getKeyboardHeight(notification: notification)
+        }
     }
     
-    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
-        textField.resignFirstResponder()
-        return true
+    //After keyboard pops up
+    func keyboardPoppedDown(notification : Notification){
+        if bottomTextField.isFirstResponder {
+            self.view.center.y += getKeyboardHeight(notification: notification)
+        }
+    }
+    
+    //Get Keyboard Height
+    func getKeyboardHeight(notification : Notification) -> CGFloat {
+        
+        let userInfo = notification.userInfo
+        let keyboardHeight = userInfo?[UIKeyboardFrameEndUserInfoKey] as! NSValue
+        return keyboardHeight.cgRectValue.height
+    }
+    
+    //Share your image
+    @IBAction func shareButtonPressed(_ sender: Any) {
+        
+        let image = generateImage()
+        activityViewController = UIActivityViewController(activityItems: [image], applicationActivities: nil)
+        present(activityViewController, animated: true) {
+            self.saveMeme()
+        }
+    }
+    
+    //Cancel Button Tapped
+    @IBAction func cancelButtonTapped(_ sender: Any) {
+        
+        topTextField.text = "TOP TEXT HERE"
+        bottomTextField.text = "BOTTOM TEXT HERE"
+        originalImage.image = UIImage()
+        shareButton.isEnabled = false
+    }
+    
+    //Generate memed Image
+    func generateImage() -> UIImage {
+        
+        //Hide navbar and toolbar
+        hideOrUnhideToolbarNavbar(bool: true)
+        
+        UIGraphicsBeginImageContext(self.view.bounds.size)
+        self.view.drawHierarchy(in: self.view.bounds, afterScreenUpdates: true)
+        let memedImage = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsEndImageContext()
+        
+        //unhide navbar and toolbar
+        hideOrUnhideToolbarNavbar(bool: false)
+        return memedImage!
+    }
+    
+    //hide or unhide navbar and toolbar
+    func hideOrUnhideToolbarNavbar(bool : Bool){
+        navbar.isHidden = bool
+        toolbar.isHidden = bool
+    }
+    
+    //Saving meme
+    func saveMeme(){
+        let meme = Meme(topText: topTextField.text!, bottomText: bottomTextField.text!, originalImage: originalImage.image!, memedImage: generateImage())
     }
 }
