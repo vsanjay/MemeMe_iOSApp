@@ -16,6 +16,7 @@ class MemeEditorViewController: UIViewController,UIImagePickerControllerDelegate
     @IBOutlet weak var cameraButton: UIBarButtonItem!
     
     var paragraphStyle : NSMutableParagraphStyle!
+    let textFieldDelegate = TextFieldsDelegate()
     
     // Hide status so that it wont cover our toolbar at top
     override var prefersStatusBarHidden: Bool{
@@ -25,7 +26,6 @@ class MemeEditorViewController: UIViewController,UIImagePickerControllerDelegate
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        let textFieldDelegate = TextFieldsDelegate()
         topTextField.delegate = textFieldDelegate
         bottomTextField.delegate = textFieldDelegate
         subscribeForNotifications()
