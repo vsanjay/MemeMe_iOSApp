@@ -26,11 +26,11 @@ class MemeEditorViewController: UIViewController,UIImagePickerControllerDelegate
         return true
     }
     
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        topTextField.delegate = textFieldDelegate
-        bottomTextField.delegate = textFieldDelegate
+        configureTextFields()
         subscribeForNotifications()
         
         //Setting share button to disabled mode
@@ -38,6 +38,14 @@ class MemeEditorViewController: UIViewController,UIImagePickerControllerDelegate
     }
     
     override func viewWillAppear(_ animated: Bool) {
+        
+        //Checking if camera option is available for the device or not
+        cameraButton.isEnabled = UIImagePickerController.isSourceTypeAvailable(.camera)
+        
+    }
+    
+    //Configure TextFields
+    func configureTextFields(){
         
         let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.alignment = .center
@@ -52,12 +60,16 @@ class MemeEditorViewController: UIViewController,UIImagePickerControllerDelegate
             NSParagraphStyleAttributeName : paragraphStyle
         ]
         
-        // Setting TextFields Attributes
-        topTextField.defaultTextAttributes = memeTextAttributes
-        bottomTextField.defaultTextAttributes = memeTextAttributes
         
-        //Checking if camera option is available for the device or not
-        cameraButton.isEnabled = UIImagePickerController.isSourceTypeAvailable(.camera)
+        // Setting TextFields Attributes & delegates
+        for view in view.subviews {
+            
+            if let textField = view as? UITextField{
+                textField.delegate = textFieldDelegate
+                textField.defaultTextAttributes = memeTextAttributes
+            }
+        }
+        
         
     }
     
@@ -120,7 +132,10 @@ class MemeEditorViewController: UIViewController,UIImagePickerControllerDelegate
         
         let image = generateImage()
         activityViewController = UIActivityViewController(activityItems: [image], applicationActivities: nil)
-        present(activityViewController, animated: true) {
+        present(activityViewController, animated: true)
+        
+        //Implementing Completion handler
+        activityViewController.completionWithItemsHandler = {(_,_,_,_) in
             self.saveMeme()
         }
     }
@@ -138,7 +153,7 @@ class MemeEditorViewController: UIViewController,UIImagePickerControllerDelegate
     func generateImage() -> UIImage {
         
         //Hide navbar and toolbar
-        hideOrUnhideToolbarNavbar(bool: true)
+        configureBars(bool: true)
         
         UIGraphicsBeginImageContext(self.view.bounds.size)
         self.view.drawHierarchy(in: self.view.bounds, afterScreenUpdates: true)
@@ -146,12 +161,12 @@ class MemeEditorViewController: UIViewController,UIImagePickerControllerDelegate
         UIGraphicsEndImageContext()
         
         //unhide navbar and toolbar
-        hideOrUnhideToolbarNavbar(bool: false)
+        configureBars(bool: false)
         return memedImage!
     }
     
     //hide or unhide navbar and toolbar
-    func hideOrUnhideToolbarNavbar(bool : Bool){
+    func configureBars(bool : Bool){
         navbar.isHidden = bool
         toolbar.isHidden = bool
     }
@@ -160,4 +175,5 @@ class MemeEditorViewController: UIViewController,UIImagePickerControllerDelegate
     func saveMeme(){
         let meme = Meme(topText: topTextField.text!, bottomText: bottomTextField.text!, originalImage: originalImage.image!, memedImage: generateImage())
     }
+    
 }
